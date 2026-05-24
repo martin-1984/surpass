@@ -1,6 +1,8 @@
 import { DashboardStats } from "@/components/dashboard-stats";
 import { getStorageAdapter } from "@/lib/storage";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const storage = getStorageAdapter();
   const stats = await storage.getDashboardStats();

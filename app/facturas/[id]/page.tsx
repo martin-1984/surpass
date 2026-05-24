@@ -2,6 +2,8 @@ import { FacturaDetail } from "@/components/factura-detail";
 import { getStorageAdapter } from "@/lib/storage";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function FacturaDetailPage({
   params,
 }: {

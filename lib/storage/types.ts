@@ -42,21 +42,49 @@ export interface StorageAdapter {
   getDashboardStats(): Promise<DashboardStats>;
 }
 
+function isValidSupabaseUrl(url: string) {
+  if (!url || url.includes("tu-proyecto")) return false;
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname.endsWith(".supabase.co") &&
+      parsed.pathname === "/"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidSupabaseKey(key: string) {
+  return Boolean(key && key.length > 20 && !key.includes("tu-anon-key") && !key.includes("tu-service-role"));
+}
+
 export function isSupabaseConfigured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  return Boolean(url && key && isValidSupabaseUrl(url) && isValidSupabaseKey(key));
 }
 
 export function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = (
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )?.trim();
 
   if (!url || !key) {
     throw new Error("Supabase no está configurado");
+  }
+
+  if (!isValidSupabaseUrl(url)) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL inválida. Debe ser https://TU-ID.supabase.co",
+    );
+  }
+
+  if (!isValidSupabaseKey(key)) {
+    throw new Error("Clave de Supabase inválida o placeholder");
   }
 
   return createClient(url, key);
