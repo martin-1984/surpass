@@ -100,9 +100,14 @@ export function filterFacturasForPorMes(
 export function buildReportQuery(
   type: ReportType,
   filters: ReportFilters,
+  pagination?: { page: number; pageSize: number },
 ): string {
   const params = new URLSearchParams();
   params.set("type", type);
+  if (pagination) {
+    params.set("page", String(pagination.page));
+    params.set("pageSize", String(pagination.pageSize));
+  }
   if (filters.uploadedToday) {
     params.set("uploadedToday", "true");
   } else {

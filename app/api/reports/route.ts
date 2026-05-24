@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildReport, reportNeedsItems, toPreviewReport } from "@/lib/reports/build-report";
+import { buildReport, reportNeedsItems } from "@/lib/reports/build-report";
+import { paginateReport, parseReportPagination } from "@/lib/reports/paginate";
 import { reportToCsvBuffer } from "@/lib/reports/export-csv";
 import { reportToExcelBuffer } from "@/lib/reports/export-excel";
 import { reportToPdfBuffer } from "@/lib/reports/export-pdf";
@@ -43,12 +44,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (format === "json") {
-      const preview = toPreviewReport(fullReport);
+      const paginationParams = parseReportPagination(searchParams);
+      const { report, pagination } = paginateReport(fullReport, paginationParams);
       return NextResponse.json(
         {
-          report: preview,
-          totalRows: fullReport.totalRows,
-          truncated: fullReport.totalRows > preview.rows.length,
+          report,
+          pagination,
         },
         { headers: { "Cache-Control": "no-store" } },
       );

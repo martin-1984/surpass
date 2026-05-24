@@ -13,6 +13,10 @@ import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { buildReportQuery, defaultReportFilters } from "@/lib/reports/filters";
+import {
+  DEFAULT_REPORT_PAGE_SIZE,
+  type ReportPaginationMeta,
+} from "@/lib/reports/paginate";
 import type { ReportFilters, ReportResult, ReportType } from "@/lib/reports/types";
 import type { ReportExportFormat } from "@/lib/reports/types";
 import { cn } from "@/lib/utils";
@@ -36,15 +40,22 @@ export function ReportesView({
     initialFiltersProp ?? defaultReportFilters(),
   );
   const [report, setReport] = useState<ReportResult | null>(null);
-  const [totalRows, setTotalRows] = useState(0);
-  const [truncated, setTruncated] = useState(false);
+  const [pagination, setPagination] = useState<ReportPaginationMeta>({
+    page: 1,
+    pageSize: DEFAULT_REPORT_PAGE_SIZE,
+    totalRows: 0,
+    totalPages: 1,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState<ReportExportFormat | null>(null);
 
   const loadPreview = useCallback(async () => {
     setIsLoading(true);
     try {
-      const query = buildReportQuery(reportType, filters);
+      const query = buildReportQuery(reportType, filters, {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+      });
       const response = await fetch(`/api/reports?${query}&format=json`, {
         cache: "no-store",
       });
@@ -55,18 +66,19 @@ export function ReportesView({
       }
 
       setReport(data.report);
-      setTotalRows(data.totalRows ?? 0);
-      setTruncated(Boolean(data.truncated));
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "No se pudo cargar el reporte",
       );
       setReport(null);
-      setTotalRows(0);
+      setPagination((prev) => ({ ...prev, totalRows: 0, totalPages: 1 }));
     } finally {
       setIsLoading(false);
     }
-  }, [reportType, filters]);
+  }, [reportType, filters, pagination.page, pagination.pageSize]);
 
   useEffect(() => {
     void loadPreview();
@@ -126,7 +138,7 @@ export function ReportesView({
         <Button
           size="sm"
           className="h-9 rounded-xl"
-          disabled={isExporting !== null || isLoading || totalRows === 0}
+          disabled={isExporting !== null || isLoading || pagination.totalRows === 0}
           onClick={() => void handleExport("xlsx")}
         >
           {isExporting === "xlsx" ? (
@@ -140,7 +152,7 @@ export function ReportesView({
           size="sm"
           variant="outline"
           className="h-9 rounded-xl"
-          disabled={isExporting !== null || isLoading || totalRows === 0}
+          disabled={isExporting !== null || isLoading || pagination.totalRows === 0}
           onClick={() => void handleExport("csv")}
         >
           {isExporting === "csv" ? (
@@ -154,7 +166,7 @@ export function ReportesView({
           size="sm"
           variant="outline"
           className="h-9 rounded-xl"
-          disabled={isExporting !== null || isLoading || totalRows === 0}
+          disabled={isExporting !== null || isLoading || pagination.totalRows === 0}
           onClick={() => void handleExport("pdf")}
         >
           {isExporting === "pdf" ? (
@@ -166,11 +178,19 @@ export function ReportesView({
         </Button>
       </PageHeader>
 
-      <GlassCard padding="md" className="space-y-4">
-        <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-          Tipo de reporte
-        </h2>
-        <ReportTypeSelect value={reportType} onChange={setReportType} />
+      <GlassCard padding="md">
+        <div className="space-y-5">
+          <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Tipo de reporte
+          </h2>
+          <ReportTypeSelect
+            value={reportType}
+            onChange={(type) => {
+              setReportType(type);
+              setPagination((prev) => ({ ...prev, page: 1 }));
+            }}
+          />
+        </div>
       </GlassCard>
 
       <ReportFiltersPanel
@@ -179,17 +199,26 @@ export function ReportesView({
         proveedores={proveedores}
         añosDisponibles={añosDisponibles}
         isLoading={isLoading}
-        onChange={setFilters}
+        onChange={(next) => {
+          setFilters(next);
+          setPagination((prev) => ({ ...prev, page: 1 }));
+        }}
       />
 
       <GlassCard padding="md">
-        {isLoading ? (
+        {isLoading && !report ? (
           <LoadingState label="Generando vista previa..." />
         ) : report ? (
           <ReportPreviewTable
             report={report}
-            truncated={truncated}
-            totalRows={totalRows}
+            pagination={pagination}
+            isLoading={isLoading}
+            onPageChange={(page) =>
+              setPagination((prev) => ({ ...prev, page }))
+            }
+            onPageSizeChange={(pageSize) =>
+              setPagination((prev) => ({ ...prev, page: 1, pageSize }))
+            }
           />
         ) : (
           <EmptyState

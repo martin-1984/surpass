@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/app-sidebar";
 
-export default function ReportesLayout({
+export default function ShellLayout({
   children,
 }: {
   children: React.ReactNode;

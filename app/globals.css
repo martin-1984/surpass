@@ -187,6 +187,27 @@
     @apply bg-gradient-to-r from-primary to-[#5B5AE8] bg-clip-text text-transparent;
   }
 
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 6px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .page-transition {
+    animation: pageEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-transition {
+      animation: none;
+    }
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

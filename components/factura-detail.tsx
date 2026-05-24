@@ -106,7 +106,7 @@ export function FacturaDetail({
   );
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8">
       <Link
         href={returnHref}
         className={cn(

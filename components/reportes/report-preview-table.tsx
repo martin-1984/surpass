@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -8,18 +9,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { ReportPagination } from "@/components/reportes/report-pagination";
+import type { ReportPaginationMeta } from "@/lib/reports/paginate";
 import type { ReportResult } from "@/lib/reports/types";
 
 interface ReportPreviewTableProps {
   report: ReportResult;
-  truncated?: boolean;
-  totalRows?: number;
+  pagination: ReportPaginationMeta;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  isLoading?: boolean;
 }
 
 export function ReportPreviewTable({
   report,
-  truncated,
-  totalRows,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  isLoading,
 }: ReportPreviewTableProps) {
   return (
     <div className="space-y-3">
@@ -28,15 +36,27 @@ export function ReportPreviewTable({
           <h3 className="font-heading text-lg font-bold">{report.title}</h3>
           <p className="text-sm text-muted-foreground">{report.periodLabel}</p>
         </div>
-        {totalRows != null ? (
-          <p className="text-sm font-medium text-muted-foreground">
-            {totalRows} fila{totalRows !== 1 ? "s" : ""}
-            {truncated ? " (vista previa limitada)" : ""}
-          </p>
-        ) : null}
+        <p className="text-sm font-medium text-muted-foreground">
+          {pagination.totalRows} fila{pagination.totalRows !== 1 ? "s" : ""} en total
+        </p>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-border/80">
+      <div className="relative">
+        {isLoading ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/50 backdrop-blur-[1px]"
+            aria-hidden
+          >
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : null}
+
+        <div
+          className={cn(
+            "overflow-x-auto rounded-2xl border border-border/80 transition-opacity duration-150",
+            isLoading && "opacity-60",
+          )}
+        >
         <Table>
           <TableHeader>
             <TableRow>
@@ -77,7 +97,15 @@ export function ReportPreviewTable({
             ) : null}
           </TableBody>
         </Table>
+        </div>
       </div>
+
+      <ReportPagination
+        pagination={pagination}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        disabled={isLoading}
+      />
     </div>
   );
 }

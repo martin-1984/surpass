@@ -72,6 +72,4 @@ export const REPORT_META: Record<
   },
 };
 
-export const PREVIEW_ROW_LIMIT = 50;
-
 export const PDF_ROW_LIMIT = 500;

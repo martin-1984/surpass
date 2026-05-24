@@ -66,40 +66,58 @@ export function DashboardFilters({
     [proveedores],
   );
 
-  return (
-    <GlassCard className="space-y-6" padding="md">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-wide text-primary">
-            <Filter className="h-4.5 w-4.5 shrink-0" />
-            <span>Filtros analíticos</span>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="shrink-0 border-border/80 bg-background/30 font-semibold transition-all duration-300 hover:bg-background/70 group/btn"
-            disabled={isLoading}
-            onClick={resetFilters}
-          >
-            <RotateCcw className="mr-2 h-4 w-4 transition-transform duration-500 group-hover/btn:-rotate-180" />
-            Mes actual
-          </Button>
-        </div>
-        <p className="text-sm font-medium text-muted-foreground mb-2.5">
-          Segmenta por periodo y proveedor · {periodLabel}
-        </p>
-      </div>
+  const yearItems = useMemo(
+    () =>
+      añosDisponibles.map((year) => ({
+        value: String(year),
+        label: String(year),
+      })),
+    [añosDisponibles],
+  );
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-2.5">
-          <Label htmlFor="filter-year" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Año</Label>
+  const fieldLabelClass =
+    "text-xs font-bold tracking-wider text-muted-foreground uppercase";
+  const controlClass =
+    "!h-11 !min-h-11 w-full rounded-xl border-border/80 bg-background/40 py-2 transition-all hover:bg-background/60 focus:bg-background/80";
+
+  return (
+    <GlassCard padding="md">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-wide text-primary">
+              <Filter className="h-4.5 w-4.5 shrink-0" />
+              <span>Filtros analíticos</span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-border/80 bg-background/30 font-semibold transition-all duration-300 hover:bg-background/70 group/btn"
+              disabled={isLoading}
+              onClick={resetFilters}
+            >
+              <RotateCcw className="mr-2 h-4 w-4 transition-transform duration-500 group-hover/btn:-rotate-180" />
+              Mes actual
+            </Button>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            Segmenta por periodo y proveedor · {periodLabel}
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="filter-year" className={fieldLabelClass}>
+            Año
+          </Label>
           <Select
+            items={yearItems}
             value={String(filters.year)}
             onValueChange={(value) => update({ year: Number(value) })}
             disabled={isLoading}
           >
-            <SelectTrigger id="filter-year" className="h-11 w-full border-border/80 bg-background/40 hover:bg-background/60 focus:bg-background/80 transition-all rounded-xl">
+            <SelectTrigger id="filter-year" className={controlClass}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -112,8 +130,10 @@ export function DashboardFilters({
           </Select>
         </div>
 
-        <div className="space-y-2.5">
-          <Label htmlFor="filter-month" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Mes</Label>
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="filter-month" className={fieldLabelClass}>
+            Mes
+          </Label>
           <Select
             items={mesItems}
             value={filters.month == null ? "all" : String(filters.month)}
@@ -122,7 +142,7 @@ export function DashboardFilters({
             }
             disabled={isLoading}
           >
-            <SelectTrigger id="filter-month" className="h-11 w-full border-border/80 bg-background/40 hover:bg-background/60 focus:bg-background/80 transition-all rounded-xl">
+            <SelectTrigger id="filter-month" className={controlClass}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -136,8 +156,10 @@ export function DashboardFilters({
           </Select>
         </div>
 
-        <div className="space-y-2.5 sm:col-span-2 lg:col-span-1">
-          <Label htmlFor="filter-proveedor" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Proveedor</Label>
+        <div className="flex flex-col gap-2.5 sm:col-span-2 lg:col-span-1">
+          <Label htmlFor="filter-proveedor" className={fieldLabelClass}>
+            Proveedor
+          </Label>
           <Select
             items={proveedorItems}
             value={filters.proveedor ?? "all"}
@@ -146,7 +168,7 @@ export function DashboardFilters({
             }
             disabled={isLoading}
           >
-            <SelectTrigger id="filter-proveedor" className="h-11 w-full border-border/80 bg-background/40 hover:bg-background/60 focus:bg-background/80 transition-all rounded-xl">
+            <SelectTrigger id="filter-proveedor" className={controlClass}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -158,6 +180,7 @@ export function DashboardFilters({
               ))}
             </SelectContent>
           </Select>
+        </div>
         </div>
       </div>
     </GlassCard>

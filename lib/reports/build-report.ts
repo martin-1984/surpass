@@ -7,7 +7,6 @@ import { generatePorProveedorReport } from "./generators/por-proveedor";
 import { generateResumenReport } from "./generators/resumen";
 import { generateTopProductosReport } from "./generators/top-productos";
 import {
-  PREVIEW_ROW_LIMIT,
   REPORT_META,
   type ReportFilters,
   type ReportResult,
@@ -65,15 +64,4 @@ function filterFacturasWithItems(
 ): FacturaWithItems[] {
   const idSet = new Set(ids);
   return all.filter((f) => idSet.has(f.id));
-}
-
-export function toPreviewReport(report: ReportResult): ReportResult {
-  if (report.rows.length <= PREVIEW_ROW_LIMIT) {
-    return report;
-  }
-  return {
-    ...report,
-    rows: report.rows.slice(0, PREVIEW_ROW_LIMIT),
-    totalRows: report.totalRows,
-  };
 }

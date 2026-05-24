@@ -225,7 +225,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="app-mesh-bg flex-1 overflow-auto">
+        <main className="app-mesh-bg relative flex-1 overflow-auto">
           <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
       </div>

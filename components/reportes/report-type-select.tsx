@@ -10,7 +10,7 @@ interface ReportTypeSelectProps {
 
 export function ReportTypeSelect({ value, onChange }: ReportTypeSelectProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {REPORT_TYPES.map((type) => {
         const meta = REPORT_META[type];
         const selected = value === type;
@@ -27,7 +27,7 @@ export function ReportTypeSelect({ value, onChange }: ReportTypeSelectProps) {
             )}
           >
             <p className="font-heading text-sm font-bold text-foreground">{meta.title}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               {meta.description}
             </p>
           </button>
