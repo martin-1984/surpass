@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const outfit = Outfit({
+const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -32,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${jakarta.variable} ${outfit.variable} ${geistMono.variable} h-full`}
+      className={`${inter.variable} ${plusJakartaSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full font-sans">
         <TooltipProvider>
@@ -41,7 +44,7 @@ export default function RootLayout({
             richColors
             position="top-center"
             toastOptions={{
-              className: "backdrop-blur-xl border border-white/10",
+              className: "border border-border bg-background shadow-lg",
             }}
           />
         </TooltipProvider>

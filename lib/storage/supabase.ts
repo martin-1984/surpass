@@ -1,3 +1,4 @@
+import { isSameFactura } from "@/lib/factura-identity";
 import { createServiceClient } from "./types";
 import type {
   CreateFacturaInput,
@@ -44,6 +45,62 @@ export const supabaseStorageAdapter: StorageAdapter = {
       path: safeName,
       url: urlData.publicUrl,
     };
+  },
+
+  async findFacturaByProveedorAndNumero(proveedor: string, numeroFactura: string) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("facturas")
+      .select("*, factura_items(*)")
+      .eq("numero_factura", numeroFactura.trim());
+
+    if (error) throw new Error(error.message);
+
+    const match = (data ?? []).find((row) =>
+      isSameFactura(
+        { proveedor: String(row.proveedor), numero_factura: String(row.numero_factura) },
+        proveedor,
+        numeroFactura,
+      ),
+    );
+
+    if (!match) return null;
+
+    const items = (match.factura_items ?? []) as Array<Record<string, unknown>>;
+    return {
+      ...mapFactura(match),
+      factura_items: items.map((item) => ({
+        id: String(item.id),
+        factura_id: String(item.factura_id),
+        item: String(item.item),
+        cantidad: Number(item.cantidad),
+        unidad: String(item.unidad),
+        codigo: String(item.codigo),
+        descripcion: String(item.descripcion),
+        valor_unitario: Number(item.valor_unitario),
+        descuento: Number(item.descuento),
+        precio_unitario: Number(item.precio_unitario),
+        valor_venta: Number(item.valor_venta),
+      })),
+    } satisfies FacturaWithItems;
+  },
+
+  async deleteFactura(id: string) {
+    const supabase = createServiceClient();
+    const existing = await this.getFactura(id);
+
+    if (existing?.archivo_path) {
+      const { error: storageError } = await supabase.storage
+        .from("facturas")
+        .remove([existing.archivo_path]);
+
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+    }
+
+    const { error } = await supabase.from("facturas").delete().eq("id", id);
+    if (error) throw new Error(error.message);
   },
 
   async createFactura(input: CreateFacturaInput) {

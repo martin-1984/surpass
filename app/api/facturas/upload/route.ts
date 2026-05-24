@@ -34,11 +34,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const numeroFactura = (parsed.numeroFactura || file.name).trim();
+    const proveedor = parsed.provider;
+
+    const existing = await storage.findFacturaByProveedorAndNumero(proveedor, numeroFactura);
+    if (existing) {
+      await storage.deleteFactura(existing.id);
+    }
+
     const savedFile = await storage.savePdf(file.name, buffer);
 
     const factura = await storage.createFactura({
-      numeroFactura: parsed.numeroFactura || file.name,
-      proveedor: parsed.provider,
+      numeroFactura,
+      proveedor,
       rucEmisor: parsed.rucEmisor || null,
       fechaEmision: parsed.fechaEmision,
       fechaVencimiento: parsed.fechaVencimiento,
@@ -62,7 +70,12 @@ export async function POST(request: Request) {
       })),
     });
 
-    return NextResponse.json({ factura, parsed });
+    return NextResponse.json({
+      factura,
+      parsed,
+      replaced: Boolean(existing),
+      replacedId: existing?.id ?? null,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al subir factura" },

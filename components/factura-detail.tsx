@@ -1,21 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { ArrowLeft, Building2, Calendar, Hash, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { GlassCard } from "@/components/glass-card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/data-table/data-table";
+import { getFacturaItemColumns } from "@/components/factura-items/columns";
 import { formatCurrency, formatDate, providerLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { FacturaWithItems } from "@/lib/types/database";
+import type { FacturaItem, FacturaWithItems } from "@/lib/types/database";
 
 function MetaCard({
   icon: Icon,
@@ -27,48 +21,120 @@ function MetaCard({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-muted/20 p-4">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <Icon className="h-3.5 w-3.5 text-cyan-400" />
-        {label}
+    <div className="surface-card flex items-center gap-4 p-5 transition-all duration-200 hover:border-primary/25 hover:shadow-md">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary ring-1 ring-primary/10 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/12">
+        <Icon className="h-5 w-5" />
       </div>
-      <p className="font-medium">{value}</p>
+      <div className="min-w-0 space-y-0.5">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 block">
+          {label}
+        </span>
+        <p className="font-bold text-foreground leading-snug">{value}</p>
+      </div>
     </div>
   );
 }
 
-export function FacturaDetail({ factura }: { factura: FacturaWithItems }) {
+function FacturaItemsMobileCards({
+  items,
+  moneda,
+}: {
+  items: FacturaItem[];
+  moneda: string;
+}) {
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className="space-y-3 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-sm hover:border-primary/15 transition-all duration-200"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider">Item {item.item}</span>
+            <span className="shrink-0 font-bold text-primary">
+              {formatCurrency(item.valor_venta, moneda)}
+            </span>
+          </div>
+          <p className="text-sm font-semibold leading-snug text-foreground/90">{item.descripcion}</p>
+          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground/95 bg-muted/40 p-2.5 rounded-xl border border-border/40">
+            <span className="truncate">Cód: <span className="font-medium text-foreground/80">{item.codigo}</span></span>
+            <span className="text-right">
+              Cant: <span className="font-medium text-foreground/80">{item.cantidad} {item.unidad}</span>
+            </span>
+            <span>V.U: <span className="font-medium text-foreground/80">{formatCurrency(item.valor_unitario, moneda)}</span></span>
+            <span className="text-right">
+              Dscto: <span className="font-medium text-foreground/80">{formatCurrency(item.descuento, moneda)}</span>
+            </span>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function FacturaDetail({
+  factura,
+  returnHref = "/facturas?uploadedToday=true",
+}: {
+  factura: FacturaWithItems;
+  returnHref?: string;
+}) {
+  const columns = useMemo(
+    () => getFacturaItemColumns(factura.moneda),
+    [factura.moneda],
+  );
+
+  const desktopHeader = (
+    <div className="flex items-center gap-3 border-b border-border/50 px-6 py-4.5 bg-card/50">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary ring-1 ring-primary/10">
+        <Building2 className="h-5 w-5" />
+      </div>
+      <div>
+        <h2 className="font-heading text-sm font-bold tracking-tight text-foreground/90">Detalle de líneas</h2>
+        <p className="text-xs text-muted-foreground/80">
+          {factura.factura_items.length} ítem(s) extraídos automáticamente del PDF
+        </p>
+      </div>
+    </div>
+  );
+
+  const mobileHeader = (
+    <h2 className="font-heading text-lg font-bold text-foreground/90 lg:hidden">
+      Detalle ({factura.factura_items.length} ítems)
+    </h2>
+  );
+
+  return (
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <Link
-        href="/facturas"
+        href={returnHref}
         className={cn(
           buttonVariants({ variant: "ghost", size: "sm" }),
-          "inline-flex w-fit text-muted-foreground hover:text-foreground",
+          "inline-flex w-fit text-muted-foreground hover:text-foreground rounded-xl transition-all duration-200 hover:bg-muted/60 font-medium",
         )}
       >
-        <ArrowLeft className="mr-2 h-4 w-4" />
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
         Volver al historial
       </Link>
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
             {factura.numero_factura}
           </h1>
-          <Badge className="bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30">
+          <Badge className="bg-primary/8 text-primary border-primary/10 hover:bg-primary/12 font-bold px-3 py-1 rounded-full text-xs">
             {providerLabel(factura.proveedor)}
           </Badge>
-          <Badge variant="outline" className="border-white/15">
+          <Badge variant="outline" className="border-border bg-background/50 text-foreground/80 px-3 py-1 rounded-full text-xs font-semibold">
             {factura.estado === "parsed" ? "Procesada" : "Pendiente"}
           </Badge>
         </div>
-        <p className="truncate text-sm text-muted-foreground">
-          {factura.archivo_nombre}
+        <p className="truncate text-sm font-medium text-muted-foreground/80">
+          Archivo: {factura.archivo_nombre}
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetaCard
           icon={Calendar}
           label="Emisión"
@@ -91,89 +157,19 @@ export function FacturaDetail({ factura }: { factura: FacturaWithItems }) {
         />
       </div>
 
-      {/* Mobile: cards por línea */}
-      <div className="space-y-3 md:hidden">
-        <h2 className="font-heading text-lg font-semibold">
-          Detalle ({factura.factura_items.length} ítems)
-        </h2>
-        {factura.factura_items.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-xl border border-white/10 bg-card/40 p-4 space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Item {item.item}</span>
-              <span className="font-semibold text-cyan-400">
-                {formatCurrency(item.valor_venta, factura.moneda)}
-              </span>
-            </div>
-            <p className="text-sm font-medium leading-snug">{item.descripcion}</p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <span>Cód: {item.codigo}</span>
-              <span>
-                {item.cantidad} {item.unidad}
-              </span>
-              <span>V.U: {formatCurrency(item.valor_unitario, factura.moneda)}</span>
-              <span>Dscto: {formatCurrency(item.descuento, factura.moneda)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <GlassCard padding="none" className="hidden overflow-hidden md:block">
-        <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4 sm:px-6">
-          <Building2 className="h-5 w-5 text-cyan-400" />
-          <div>
-            <h2 className="font-heading text-lg font-semibold">Detalle de líneas</h2>
-            <p className="text-sm text-muted-foreground">
-              {factura.factura_items.length} ítem(s) extraídos del PDF
-            </p>
-          </div>
-        </div>
-        <div className="table-scroll border-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Cant.</TableHead>
-                <TableHead>Unid.</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="text-right">V. unit.</TableHead>
-                <TableHead className="text-right">Dscto</TableHead>
-                <TableHead className="text-right">P. unit.</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {factura.factura_items.map((item) => (
-                <TableRow
-                  key={item.id}
-                  className="border-white/5 hover:bg-white/5"
-                >
-                  <TableCell>{item.item}</TableCell>
-                  <TableCell className="text-right">{item.cantidad}</TableCell>
-                  <TableCell>{item.unidad}</TableCell>
-                  <TableCell className="font-mono text-xs">{item.codigo}</TableCell>
-                  <TableCell className="max-w-[200px]">{item.descripcion}</TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(item.valor_unitario, factura.moneda)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(item.descuento, factura.moneda)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(item.precio_unitario, factura.moneda)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-cyan-400/90">
-                    {formatCurrency(item.valor_venta, factura.moneda)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </GlassCard>
+      <DataTable
+        columns={columns}
+        data={factura.factura_items}
+        resetKey={factura.id}
+        wide
+        mobileHeader={mobileHeader}
+        mobileRenderer={(items) => (
+          <FacturaItemsMobileCards items={items} moneda={factura.moneda} />
+        )}
+        desktopHeader={desktopHeader}
+        desktopContainerClassName="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-lg shadow-black/5"
+        className="[&_.table-scroll]:mx-4 [&_.table-scroll]:mb-4 sm:[&_.table-scroll]:mx-6 sm:[&_.table-scroll]:mb-6 [&_.table-scroll]:border-0"
+      />
     </div>
   );
 }

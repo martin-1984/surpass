@@ -1,17 +1,16 @@
 import { DashboardStats } from "@/components/dashboard-stats";
+import {
+  computeDashboardAnalytics,
+  currentDashboardFilters,
+} from "@/lib/dashboard-analytics";
 import { getStorageAdapter } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const storage = getStorageAdapter();
-  const stats = await storage.getDashboardStats();
+  const facturas = await storage.listFacturas();
+  const initialAnalytics = computeDashboardAnalytics(facturas, currentDashboardFilters());
 
-  return (
-    <DashboardStats
-      totalFacturas={stats.totalFacturas}
-      totalMonto={stats.totalMonto}
-      facturasRecientes={stats.facturasRecientes}
-    />
-  );
+  return <DashboardStats initialAnalytics={initialAnalytics} />;
 }

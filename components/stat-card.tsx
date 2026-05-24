@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -6,22 +7,14 @@ interface StatCardProps {
   value: React.ReactNode;
   hint?: string;
   icon: LucideIcon;
-  accent?: "cyan" | "violet" | "amber" | "emerald";
+  accent?: "primary" | "emerald" | "violet";
   className?: string;
 }
 
-const accentOrb = {
-  cyan: "from-cyan-500/20 to-cyan-600/5",
-  violet: "from-violet-500/20 to-violet-600/5",
-  amber: "from-amber-500/20 to-amber-600/5",
-  emerald: "from-emerald-500/20 to-emerald-600/5",
-};
-
-const accentIcon = {
-  cyan: "from-cyan-500/20 to-cyan-600/5 text-cyan-400 ring-cyan-500/30",
-  violet: "from-violet-500/20 to-violet-600/5 text-violet-400 ring-violet-500/30",
-  amber: "from-amber-500/20 to-amber-600/5 text-amber-400 ring-amber-500/30",
-  emerald: "from-emerald-500/20 to-emerald-600/5 text-emerald-400 ring-emerald-500/30",
+const accentStyles = {
+  primary: "bg-primary/10 text-primary ring-primary/20",
+  emerald: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
+  violet: "bg-violet-500/10 text-violet-600 ring-violet-500/20",
 };
 
 export function StatCard({
@@ -29,43 +22,35 @@ export function StatCard({
   value,
   hint,
   icon: Icon,
-  accent = "cyan",
+  accent = "primary",
   className,
 }: StatCardProps) {
   return (
-    <div
+    <Card
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-white/10 bg-card/60 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:shadow-xl hover:shadow-cyan-500/5",
+        "surface-card py-0 transition-all duration-200 hover:border-primary/20 hover:shadow-md",
         className,
       )}
     >
-      <div
-        className={cn(
-          "pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br opacity-60 blur-2xl transition-opacity group-hover:opacity-100",
-          accentOrb[accent],
-        )}
-      />
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <CardContent className="flex items-start justify-between gap-4 p-5 sm:p-6">
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
             {title}
           </p>
-          <p className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+          <div className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {value}
-          </p>
-          {hint ? (
-            <p className="text-xs text-muted-foreground">{hint}</p>
-          ) : null}
+          </div>
+          {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
         </div>
         <div
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-inset",
-            accentIcon[accent],
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full ring-1 ring-inset",
+            accentStyles[accent],
           )}
         >
           <Icon className="h-5 w-5" />
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

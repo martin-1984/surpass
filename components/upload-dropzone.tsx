@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { CloudUpload, FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface UploadDropzoneProps {
   onUploadComplete?: () => void;
+  /** Query del listado actual, p. ej. `?emisionDesde=...` para conservar filtros al ver detalle. */
+  listQuery?: string;
 }
 
-export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
+export function UploadDropzone({ onUploadComplete, listQuery = "" }: UploadDropzoneProps) {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -39,9 +42,13 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
           throw new Error(data.error ?? "Error al subir la factura");
         }
 
-        toast.success("Factura procesada correctamente");
+        toast.success(
+          data.replaced
+            ? "Factura actualizada: se reemplazó el registro anterior del mismo proveedor y número"
+            : "Factura procesada correctamente",
+        );
         onUploadComplete?.();
-        router.push(`/facturas/${data.factura.id}`);
+        router.push(`/facturas/${data.factura.id}${listQuery}`);
         router.refresh();
       } catch (error) {
         toast.error(
@@ -51,7 +58,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         setIsUploading(false);
       }
     },
-    [onUploadComplete, router],
+    [listQuery, onUploadComplete, router],
   );
 
   const handleFiles = useCallback(
@@ -63,7 +70,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   );
 
   return (
-    <div
+    <Card
       onDragOver={(event) => {
         event.preventDefault();
         setIsDragging(true);
@@ -75,69 +82,69 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         handleFiles(event.dataTransfer.files);
       }}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-5 overflow-hidden rounded-2xl border-2 border-dashed p-8 transition-all duration-300 sm:p-12",
+        "surface-card relative overflow-hidden border-2 border-dashed transition-all duration-300 animate-fade-in",
         isDragging
-          ? "border-cyan-400 bg-cyan-500/10 shadow-lg shadow-cyan-500/10"
-          : "border-white/15 bg-card/30 hover:border-cyan-500/30 hover:bg-card/50",
+          ? "border-primary bg-primary/[0.04] shadow-2xl shadow-primary/5 scale-[0.99]"
+          : "border-border/80 hover:border-primary/50 hover:bg-muted/15 hover:shadow-md",
         isUploading && "pointer-events-none opacity-80",
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-violet-500/5 transition-opacity",
+          "pointer-events-none absolute inset-0 bg-primary/[0.03] transition-opacity duration-300",
           isDragging ? "opacity-100" : "opacity-0",
         )}
       />
 
-      <div
-        className={cn(
-          "relative flex h-16 w-16 items-center justify-center rounded-2xl ring-1 ring-inset transition-all duration-300",
-          isDragging
-            ? "bg-cyan-500/20 ring-cyan-400/40"
-            : "bg-muted/50 ring-white/10",
-        )}
-      >
-        {isUploading ? (
-          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-        ) : isDragging ? (
-          <CloudUpload className="h-8 w-8 text-cyan-400" />
-        ) : (
-          <Sparkles className="h-8 w-8 text-cyan-400/80" />
-        )}
-      </div>
-
-      <div className="relative space-y-2 text-center">
-        <p className="font-heading text-lg font-semibold">
+      <CardHeader className="relative items-center text-center pt-8">
+        <div
+          className={cn(
+            "flex h-16 w-16 items-center justify-center rounded-2xl ring-1 ring-inset transition-all duration-500",
+            isDragging
+              ? "bg-primary/15 ring-primary/30 scale-110"
+              : "bg-muted/70 ring-border/80 animate-pulse-soft",
+          )}
+        >
+          {isUploading ? (
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          ) : isDragging ? (
+            <CloudUpload className="h-8 w-8 text-primary" />
+          ) : (
+            <Sparkles className="h-8 w-8 text-primary/80" />
+          )}
+        </div>
+        <CardTitle className="font-heading text-lg font-bold tracking-tight mt-3">
           {isUploading
             ? "Procesando PDF..."
             : isDragging
               ? "Suelta el archivo aquí"
               : "Arrastra tu factura PDF"}
-        </p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Cerámica Lima (F004) y Saint-Gobain (FV01). Extracción automática de
-          líneas.
-        </p>
-      </div>
+        </CardTitle>
+        <CardDescription className="max-w-sm text-xs sm:text-sm font-medium text-muted-foreground/80">
+          Cerámica Lima (F004) y Saint-Gobain (FV01). Extracción automática de líneas de detalle.
+        </CardDescription>
+      </CardHeader>
 
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={isUploading}
-        className="relative border-white/10 bg-white/5 hover:bg-white/10"
-        onClick={() => document.getElementById("pdf-upload-input")?.click()}
-      >
-        <FileText className="mr-2 h-4 w-4" />
-        Seleccionar archivo
-      </Button>
-      <input
-        id="pdf-upload-input"
-        type="file"
-        accept="application/pdf"
-        className="hidden"
-        disabled={isUploading}
-        onChange={(event) => handleFiles(event.target.files)}
-      />
-    </div>
+      <CardContent className="relative flex justify-center pb-8 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isUploading}
+          className="h-11 border-border/80 bg-background/50 hover:bg-background rounded-xl px-5 transition-all duration-300 font-semibold"
+          onClick={() => document.getElementById("pdf-upload-input")?.click()}
+        >
+          <FileText className="mr-2 h-4 w-4 text-muted-foreground transition-transform duration-300 group-hover:scale-105" />
+          Seleccionar archivo
+        </Button>
+        <input
+          id="pdf-upload-input"
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          disabled={isUploading}
+          onChange={(event) => handleFiles(event.target.files)}
+        />
+      </CardContent>
+    </Card>
   );
 }

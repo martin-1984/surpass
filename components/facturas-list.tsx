@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Calendar,
   Download,
@@ -13,56 +13,71 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/empty-state";
 import { GlassCard } from "@/components/glass-card";
-import { InvoiceMobileList } from "@/components/invoice-mobile-list";
+import { InvoicesDataView } from "@/components/invoices-data-view";
 import { LoadingState } from "@/components/loading-state";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { UploadDropzone } from "@/components/upload-dropzone";
-import { todayInputDate } from "@/lib/date-emision";
-import { formatCurrency, formatDate, providerLabel } from "@/lib/format";
+import {
+  buildFacturasListQuery,
+  type FacturasListFilterState,
+  type FacturasListMode,
+} from "@/lib/facturas-list-state";
+import { cn } from "@/lib/utils";
 import type { Factura } from "@/lib/types/database";
-
-type FilterMode = "uploadedToday" | "emision";
 
 interface FacturasListProps {
   initialFacturas: Factura[];
-  initialMode?: FilterMode;
-}
-
-function buildQuery(mode: FilterMode, emisionDesde: string, emisionHasta: string) {
-  if (mode === "emision") {
-    return `emisionDesde=${emisionDesde}&emisionHasta=${emisionHasta}`;
-  }
-  return "uploadedToday=true";
+  initialFilters: FacturasListFilterState;
+  initialListQuery: string;
 }
 
 export function FacturasList({
   initialFacturas,
-  initialMode = "uploadedToday",
+  initialFilters,
+  initialListQuery,
 }: FacturasListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [facturas, setFacturas] = useState(initialFacturas);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [filterMode, setFilterMode] = useState<FilterMode>(initialMode);
-  const [emisionDesde, setEmisionDesde] = useState(todayInputDate());
-  const [emisionHasta, setEmisionHasta] = useState(todayInputDate());
+  const [filterMode, setFilterMode] = useState<FacturasListMode>(initialFilters.mode);
+  const [emisionDesde, setEmisionDesde] = useState(initialFilters.emisionDesde);
+  const [emisionHasta, setEmisionHasta] = useState(initialFilters.emisionHasta);
+  const [listQuery, setListQuery] = useState(initialListQuery);
+
+  const replaceListUrl = useCallback(
+    (mode: FacturasListMode, desde: string, hasta: string) => {
+      const state: FacturasListFilterState = {
+        mode,
+        emisionDesde: desde,
+        emisionHasta: hasta,
+      };
+      const query = buildFacturasListQuery(state);
+      setListQuery(query);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      return query;
+    },
+    [pathname, router],
+  );
 
   const loadFacturas = useCallback(
-    async (mode: FilterMode = filterMode) => {
+    async (mode: FacturasListMode, desde: string, hasta: string) => {
       setIsLoading(true);
       try {
-        const query = buildQuery(mode, emisionDesde, emisionHasta);
+        const query =
+          mode === "emision"
+            ? `emisionDesde=${desde}&emisionHasta=${hasta}`
+            : "uploadedToday=true";
+
+        replaceListUrl(mode, desde, hasta);
+
         const response = await fetch(`/api/facturas?${query}`);
         const data = await response.json();
 
@@ -72,6 +87,8 @@ export function FacturasList({
 
         setFacturas(data.facturas ?? []);
         setFilterMode(mode);
+        setEmisionDesde(desde);
+        setEmisionHasta(hasta);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "No se pudieron cargar las facturas",
@@ -80,13 +97,16 @@ export function FacturasList({
         setIsLoading(false);
       }
     },
-    [emisionDesde, emisionHasta, filterMode],
+    [replaceListUrl],
   );
 
   async function handleExport() {
     setIsExporting(true);
     try {
-      const query = buildQuery(filterMode, emisionDesde, emisionHasta);
+      const query =
+        filterMode === "emision"
+          ? `emisionDesde=${emisionDesde}&emisionHasta=${emisionHasta}`
+          : "uploadedToday=true";
       const response = await fetch(`/api/facturas/export?${query}`);
 
       if (!response.ok) {
@@ -116,25 +136,27 @@ export function FacturasList({
       ? "Subidas hoy"
       : `Emisión ${emisionDesde.split("-").reverse().join("/")} – ${emisionHasta.split("-").reverse().join("/")}`;
 
+  const listQuerySuffix = listQuery ? `?${listQuery}` : "";
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Facturas"
-        description="Sube PDFs y consulta el historial con filtros por fecha de emisión."
+        description="Sube PDFs, consulta el historial y exporta a Excel con filtros por fecha de emisión."
       >
         <Button
           variant="outline"
           size="sm"
-          className="border-white/10 bg-transparent"
-          onClick={() => void loadFacturas(filterMode)}
+          className="h-9 rounded-xl"
+          onClick={() => void loadFacturas(filterMode, emisionDesde, emisionHasta)}
           disabled={isLoading}
         >
-          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
           Actualizar
         </Button>
         <Button
           size="sm"
-          className="bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-md shadow-emerald-500/20"
+          className="h-9 rounded-xl bg-emerald-600 font-semibold text-white shadow-sm hover:bg-emerald-700"
           onClick={() => void handleExport()}
           disabled={isExporting || facturas.length === 0}
         >
@@ -147,77 +169,84 @@ export function FacturasList({
         </Button>
       </PageHeader>
 
-      <UploadDropzone onUploadComplete={() => void loadFacturas("uploadedToday")} />
+      <UploadDropzone
+        listQuery={listQuerySuffix}
+        onUploadComplete={() => void loadFacturas(filterMode, emisionDesde, emisionHasta)}
+      />
 
       <GlassCard padding="none" className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">Historial</h2>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Badge
-                variant="secondary"
-                className="border border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
-              >
-                {filterLabel}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {facturas.length} factura(s)
-              </span>
-            </div>
-          </div>
-        </div>
+        <CardHeader className="border-b border-border/60 bg-muted/30 px-5 py-4 sm:px-6">
+          <CardTitle className="font-heading text-lg">Historial de facturas</CardTitle>
+          <CardDescription className="flex flex-wrap items-center gap-2 pt-1">
+            <Badge
+              variant="outline"
+              className="rounded-full border-primary/20 bg-primary/5 px-3 font-semibold text-primary"
+            >
+              {filterLabel}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {facturas.length} factura{facturas.length !== 1 ? "s" : ""}
+            </span>
+          </CardDescription>
+        </CardHeader>
 
-        <div className="space-y-4 p-4 sm:p-6">
-          <div className="rounded-xl border border-white/10 bg-muted/20 p-4 sm:p-5">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Calendar className="h-4 w-4 text-cyan-400" />
-              Filtro por fecha de emisión
-            </div>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-              <div className="grid flex-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="emision-desde">Desde</Label>
-                  <Input
-                    id="emision-desde"
-                    type="date"
-                    className="h-11 bg-background/50"
-                    value={emisionDesde}
-                    onChange={(e) => setEmisionDesde(e.target.value)}
-                  />
+        <CardContent className="space-y-5 p-4 sm:p-6">
+          <Card className="border-border/80 bg-muted/25 py-0 shadow-none">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+              <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Calendar className="h-4 w-4 text-primary" />
+                Filtro por fecha de emisión
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-5 sm:px-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+                <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="emision-desde" className="text-xs font-semibold uppercase text-muted-foreground">
+                      Desde
+                    </Label>
+                    <DatePicker
+                      id="emision-desde"
+                      value={emisionDesde}
+                      onChange={setEmisionDesde}
+                      placeholder="Fecha inicial"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emision-hasta" className="text-xs font-semibold uppercase text-muted-foreground">
+                      Hasta
+                    </Label>
+                    <DatePicker
+                      id="emision-hasta"
+                      value={emisionHasta}
+                      onChange={setEmisionHasta}
+                      placeholder="Fecha final"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emision-hasta">Hasta</Label>
-                  <Input
-                    id="emision-hasta"
-                    type="date"
-                    className="h-11 bg-background/50"
-                    value={emisionHasta}
-                    onChange={(e) => setEmisionHasta(e.target.value)}
-                  />
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                  <Button
+                    type="button"
+                    className="h-11 rounded-xl font-semibold shadow-sm"
+                    onClick={() => void loadFacturas("emision", emisionDesde, emisionHasta)}
+                    disabled={isLoading}
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Filtrar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl font-semibold"
+                    onClick={() => void loadFacturas("uploadedToday", emisionDesde, emisionHasta)}
+                    disabled={isLoading}
+                  >
+                    Subidas hoy
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-                <Button
-                  type="button"
-                  className="h-11 bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-md shadow-cyan-500/20"
-                  onClick={() => void loadFacturas("emision")}
-                  disabled={isLoading}
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  Filtrar
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 border-white/10"
-                  onClick={() => void loadFacturas("uploadedToday")}
-                  disabled={isLoading}
-                >
-                  Subidas hoy
-                </Button>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {isLoading ? (
             <LoadingState />
@@ -228,60 +257,14 @@ export function FacturasList({
               description="No hay facturas para el filtro seleccionado. Prueba otro rango de fechas."
             />
           ) : (
-            <>
-              <InvoiceMobileList facturas={facturas} showEstado />
-              <div className="table-scroll hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableHead>Factura</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead>Emisión</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Estado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {facturas.map((factura) => (
-                      <TableRow
-                        key={factura.id}
-                        className="border-white/5 transition-colors hover:bg-white/5"
-                      >
-                        <TableCell className="font-medium">
-                          <Link
-                            href={`/facturas/${factura.id}`}
-                            className="text-cyan-400 hover:text-cyan-300 hover:underline"
-                          >
-                            {factura.numero_factura}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{providerLabel(factura.proveedor)}</TableCell>
-                        <TableCell>{formatDate(factura.fecha_emision)}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(factura.total_pagar, factura.moneda)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              factura.estado === "parsed" ? "default" : "secondary"
-                            }
-                            className={
-                              factura.estado === "parsed"
-                                ? "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30"
-                                : ""
-                            }
-                          >
-                            {factura.estado === "parsed" ? "Procesada" : "Pendiente"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
+            <InvoicesDataView
+              facturas={facturas}
+              showEstado
+              listQuery={listQuerySuffix}
+              resetKey={`${filterMode}-${emisionDesde}-${emisionHasta}`}
+            />
           )}
-        </div>
+        </CardContent>
       </GlassCard>
     </div>
   );

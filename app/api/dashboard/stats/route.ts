@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  computeDashboardAnalytics,
+  parseDashboardQuery,
+} from "@/lib/dashboard-analytics";
 import { getStorageAdapter } from "@/lib/storage";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const filters = parseDashboardQuery(request.nextUrl.searchParams);
     const storage = getStorageAdapter();
-    const stats = await storage.getDashboardStats();
-    return NextResponse.json(stats);
+    const facturas = await storage.listFacturas();
+    const analytics = computeDashboardAnalytics(facturas, filters);
+    return NextResponse.json(analytics);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al cargar dashboard" },

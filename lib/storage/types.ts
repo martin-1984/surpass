@@ -36,6 +36,11 @@ export interface CreateFacturaInput {
 export interface StorageAdapter {
   savePdf(fileName: string, buffer: Buffer): Promise<{ path: string; url: string | null }>;
   createFactura(input: CreateFacturaInput): Promise<FacturaWithItems>;
+  findFacturaByProveedorAndNumero(
+    proveedor: string,
+    numeroFactura: string,
+  ): Promise<FacturaWithItems | null>;
+  deleteFactura(id: string): Promise<void>;
   listFacturas(): Promise<Factura[]>;
   listFacturasWithItems(): Promise<FacturaWithItems[]>;
   getFactura(id: string): Promise<FacturaWithItems | null>;

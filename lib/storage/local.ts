@@ -1,6 +1,7 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { isSameFactura } from "@/lib/factura-identity";
 import type { FacturaWithItems, StorageAdapter } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
@@ -40,6 +41,32 @@ export const localStorageAdapter: StorageAdapter = {
       path: safeName,
       url: `/api/facturas/file/${encodeURIComponent(safeName)}`,
     };
+  },
+
+  async findFacturaByProveedorAndNumero(proveedor, numeroFactura) {
+    const db = await readDb();
+    return (
+      db.facturas.find((factura) =>
+        isSameFactura(factura, proveedor, numeroFactura),
+      ) ?? null
+    );
+  },
+
+  async deleteFactura(id) {
+    const db = await readDb();
+    const index = db.facturas.findIndex((factura) => factura.id === id);
+    if (index === -1) return;
+
+    const [removed] = db.facturas.splice(index, 1);
+    await writeDb(db);
+
+    if (removed.archivo_path) {
+      try {
+        await unlink(path.join(PDF_DIR, removed.archivo_path));
+      } catch {
+        // El PDF pudo haberse eliminado manualmente
+      }
+    }
   },
 
   async createFactura(input) {

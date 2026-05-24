@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
@@ -17,22 +18,24 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div
+    <Card
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/10 bg-muted/20 px-6 py-14 text-center",
+        "items-center border-dashed border-border/80 bg-muted/10 py-12 text-center shadow-none rounded-3xl animate-fade-in",
         className,
       )}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-violet-500/10 ring-1 ring-white/10">
-        <Icon className="h-7 w-7 text-cyan-400/80" />
-      </div>
-      <div className="space-y-1">
-        <p className="font-medium text-foreground">{title}</p>
-        {description ? (
-          <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-      {children}
-    </div>
+      <CardContent className="flex flex-col items-center gap-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/8 ring-1 ring-primary/15 animate-pulse-soft">
+          <Icon className="h-7 w-7 text-primary" />
+        </div>
+        <div className="space-y-1.5">
+          <p className="font-bold text-foreground text-base tracking-tight">{title}</p>
+          {description ? (
+            <p className="max-w-sm text-sm font-medium text-muted-foreground/80 leading-relaxed">{description}</p>
+          ) : null}
+        </div>
+        {children}
+      </CardContent>
+    </Card>
   );
 }

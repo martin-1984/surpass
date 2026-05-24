@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -18,15 +19,17 @@ export function GlassCard({
   className,
   padding = "md",
 }: GlassCardProps) {
+  if (padding === "none") {
+    return (
+      <Card className={cn("gap-0 glass-panel py-0 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/15 rounded-2xl", className)}>
+        {children}
+      </Card>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-white/10 bg-card/50 shadow-xl shadow-black/20 backdrop-blur-xl",
-        paddingMap[padding],
-        className,
-      )}
-    >
-      {children}
-    </div>
+    <Card className={cn("glass-panel shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/15 rounded-2xl", className)}>
+      <CardContent className={cn("pt-0", paddingMap[padding])}>{children}</CardContent>
+    </Card>
   );
 }
