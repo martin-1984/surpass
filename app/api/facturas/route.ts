@@ -13,7 +13,10 @@ export async function GET(request: Request) {
     const facturas = await storage.listFacturas();
     const filtered = filterFacturas(facturas, filters);
 
-    return NextResponse.json({ facturas: filtered, filters });
+    return NextResponse.json(
+      { facturas: filtered, filters },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al listar facturas" },

@@ -1,7 +1,7 @@
 import type { InvoiceLineItem, InvoiceParser, ParsedInvoice } from "../types";
 
 const LINE_PATTERN =
-  /(\d{3})\s+([\d.]+)\s+([A-Z]{2,4})\s+(\d{6,9})\s+(.+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
+  /(\d{3})\s+([\d.]+)\s+([A-Z]{2,4})\s+(\d{4,9})\s+(.+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
 
 function parseNumber(value: string): number {
   return Number(value.replace(/,/g, ""));
@@ -11,9 +11,10 @@ function parseHeader(text: string): Partial<ParsedInvoice> {
   const numeroMatch =
     text.match(/F004\s*-\s*(\d+)/i) ?? text.match(/FACTURA\s*:?\s*F004\s*-\s*(\d+)/i);
   const rucMatch = text.match(/R\.?U\.?C\.?\s*(\d{11})/i);
-  const fechaMatch = text.match(
-    /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})/,
-  );
+  const fechaMatch =
+    text.match(
+      /FECHA\s*EMISI[OÓ]N[\s\S]*?FECHA\s*VENCIMIENTO[\s\S]*?(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})/i,
+    ) ?? text.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})/);
   const totalMatch = text.match(/TOTAL A PAGAR\s*\(S\/\)\s*([\d,]+\.\d{2})/i);
 
   return {

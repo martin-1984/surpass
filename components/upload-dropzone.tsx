@@ -9,12 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 
 interface UploadDropzoneProps {
-  onUploadComplete?: () => void;
-  /** Query del listado actual, p. ej. `?emisionDesde=...` para conservar filtros al ver detalle. */
-  listQuery?: string;
+  onUploadComplete?: (factura: { id: string; fecha_emision?: string | null }) => void;
 }
 
-export function UploadDropzone({ onUploadComplete, listQuery = "" }: UploadDropzoneProps) {
+export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -47,8 +45,8 @@ export function UploadDropzone({ onUploadComplete, listQuery = "" }: UploadDropz
             ? "Factura actualizada: se reemplazó el registro anterior del mismo proveedor y número"
             : "Factura procesada correctamente",
         );
-        onUploadComplete?.();
-        router.push(`/facturas/${data.factura.id}${listQuery}`);
+        onUploadComplete?.(data.factura);
+        router.push(`/facturas/${data.factura.id}?uploadedToday=true`);
         router.refresh();
       } catch (error) {
         toast.error(
@@ -58,7 +56,7 @@ export function UploadDropzone({ onUploadComplete, listQuery = "" }: UploadDropz
         setIsUploading(false);
       }
     },
-    [listQuery, onUploadComplete, router],
+    [onUploadComplete, router],
   );
 
   const handleFiles = useCallback(
@@ -120,8 +118,8 @@ export function UploadDropzone({ onUploadComplete, listQuery = "" }: UploadDropz
               ? "Suelta el archivo aquí"
               : "Arrastra tu factura PDF"}
         </CardTitle>
-        <CardDescription className="max-w-sm text-xs sm:text-sm font-medium text-muted-foreground/80">
-          Cerámica Lima (F004) y Saint-Gobain (FV01). Extracción automática de líneas de detalle.
+        <CardDescription className="max-w-sm text-xs font-medium text-muted-foreground/80 sm:text-sm">
+          Solo archivos PDF. Los datos de la factura y sus líneas se cargarán al procesar el archivo.
         </CardDescription>
       </CardHeader>
 

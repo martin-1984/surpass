@@ -31,7 +31,7 @@ Abre [http://localhost:3000](http://localhost:3000) e ingresa con:
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción |
 | `npm run start` | Servidor de producción |
-| `npm test` | Tests de parsers PDF |
+| `npm test` | Tests de parsers PDF y reportes |
 | `npm run lint` | ESLint |
 
 ## Variables de entorno
@@ -73,15 +73,33 @@ SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
 
 El plan **Hobby** de Vercel es gratuito e incluye dominio `*.vercel.app`. Supabase también tiene tier gratis (500 MB DB + 1 GB storage).
 
+## Reportes
+
+En **Reportes** (`/reportes`) puedes generar y descargar:
+
+| Tipo | Descripción |
+|------|-------------|
+| Resumen del periodo | Totales, monto y promedio |
+| Por proveedor | Participación por proveedor |
+| Por mes | Desglose mensual del año |
+| Listado de facturas | Cabeceras de factura |
+| Detalle por línea | Ítems (como el Excel histórico) |
+| Top productos | Agregado por código de producto |
+
+Filtros: rango de **fecha de emisión**, proveedor o **subidas hoy**. Exportación en **Excel, CSV y PDF** con vista previa en pantalla.
+
 ## Estructura
 
 ```
 app/
   login/                 # Pantalla de login
-  dashboard/             # Dashboard + facturas
-  api/                   # Upload, listado, auth
+  dashboard/             # Dashboard analítico
+  facturas/              # Subida y listado
+  reportes/              # Módulo de reportes
+  api/                   # Upload, listado, reportes, auth
 lib/
-  pdf/parsers/           # Cerámica Lima y Saint-Gobain
+  pdf/parsers/           # Parsers de facturas PDF
+  reports/               # Generadores y exportación
   storage/               # Supabase o almacenamiento local
 supabase/migrations/     # Esquema SQL
 pdf/                     # PDFs de ejemplo para tests

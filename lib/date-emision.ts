@@ -1,7 +1,13 @@
-/** Convierte DD/MM/YYYY a Date (medianoche local). */
+/** Convierte DD/MM/YYYY o YYYY-MM-DD a Date (medianoche local). */
 export function parseEmisionDate(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const parts = value.split("/");
+  if (!value?.trim()) return null;
+  const trimmed = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    return parseInputDate(trimmed.slice(0, 10));
+  }
+
+  const parts = trimmed.split("/");
   if (parts.length !== 3) return null;
   const day = Number(parts[0]);
   const month = Number(parts[1]);

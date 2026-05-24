@@ -2,9 +2,9 @@ import { LoginForm } from "@/components/login-form";
 import { FileSpreadsheet, ShieldCheck, Zap } from "lucide-react";
 
 const features = [
-  { icon: Zap, label: "Extracción automática" },
-  { icon: FileSpreadsheet, label: "Export Excel" },
-  { icon: ShieldCheck, label: "Multi-proveedor" },
+  { icon: Zap, label: "Carga de PDF" },
+  { icon: FileSpreadsheet, label: "Exportar Excel" },
+  { icon: ShieldCheck, label: "Filtros y reportes" },
 ];
 
 export default function LoginPage() {

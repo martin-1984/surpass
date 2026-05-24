@@ -3,8 +3,20 @@ import { facturasToExcelBuffer } from "@/lib/export-excel";
 import {
   filterFacturasWithItems,
   parseFacturasQuery,
+  type FacturasFilterParams,
 } from "@/lib/facturas-filter";
+import type { ReportFilters } from "@/lib/reports/types";
 import { getStorageAdapter } from "@/lib/storage";
+
+function toReportFilters(params: FacturasFilterParams): ReportFilters {
+  if (params.uploadedToday) {
+    return { uploadedToday: true };
+  }
+  return {
+    emisionDesde: params.emisionDesde,
+    emisionHasta: params.emisionHasta,
+  };
+}
 
 export async function GET(request: Request) {
   try {
@@ -21,7 +33,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const buffer = facturasToExcelBuffer(filtered);
+    const buffer = facturasToExcelBuffer(filtered, toReportFilters(filters));
     const filename =
       filters.uploadedToday
         ? `facturas_subidas_${new Date().toISOString().slice(0, 10)}.xlsx`

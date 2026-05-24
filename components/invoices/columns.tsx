@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Building2, CalendarDays, FileText, Hash } from "lucide-react";
+import { DeleteFacturaButton } from "@/components/delete-factura-button";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { formatCurrency, formatDate, providerLabel } from "@/lib/format";
@@ -33,7 +34,11 @@ function facturaDetailHref(id: string, listQuery: string) {
   return `/facturas/${id}${listQuery}`;
 }
 
-export function getInvoiceColumns(showEstado = false, listQuery = ""): ColumnDef<Factura>[] {
+export function getInvoiceColumns(
+  showEstado = false,
+  listQuery = "",
+  onDeleted?: (id: string) => void,
+): ColumnDef<Factura>[] {
   const columns: ColumnDef<Factura>[] = [
     {
       accessorKey: "numero_factura",
@@ -121,6 +126,22 @@ export function getInvoiceColumns(showEstado = false, listQuery = ""): ColumnDef
       ),
     });
   }
+
+  columns.push({
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    enableSorting: false,
+    cell: ({ row }) => (
+      <div className="flex justify-end">
+        <DeleteFacturaButton
+          facturaId={row.original.id}
+          label={row.original.numero_factura}
+          iconOnly
+          onDeleted={() => onDeleted?.(row.original.id)}
+        />
+      </div>
+    ),
+  });
 
   return columns;
 }

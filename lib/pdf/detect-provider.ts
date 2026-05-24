@@ -18,7 +18,7 @@ export function parseInvoiceText(text: string): ParsedInvoice {
   const parser = detectParser(text);
   if (!parser) {
     throw new Error(
-      "Formato de factura no reconocido. Solo se soportan Cerámica Lima (F004) y Saint-Gobain (FV01).",
+      "Formato de factura no reconocido. Verifica que el PDF sea una factura compatible.",
     );
   }
 

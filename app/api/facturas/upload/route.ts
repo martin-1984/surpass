@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getStorageAdapter } from "@/lib/storage";
 import { parseInvoicePdf } from "@/lib/pdf/parse-invoice";
@@ -69,6 +70,10 @@ export async function POST(request: Request) {
         valorVenta: item.valorVenta,
       })),
     });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/facturas");
+    revalidatePath("/reportes");
 
     return NextResponse.json({
       factura,

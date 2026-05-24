@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  FileBarChart,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/facturas", label: "Facturas", icon: FileText },
+  { href: "/reportes", label: "Reportes", icon: FileBarChart },
 ] as const;
 
 const SIDEBAR_WIDTH = "16rem";
@@ -33,6 +35,7 @@ const SIDEBAR_COLLAPSED = "4.5rem";
 
 function isNavActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/reportes") return pathname === "/reportes";
   return pathname === "/facturas" || pathname.startsWith("/facturas/");
 }
 

@@ -11,6 +11,7 @@ interface InvoicesDataViewProps {
   showEstado?: boolean;
   resetKey?: string | number;
   listQuery?: string;
+  onDeleted?: (id: string) => void;
 }
 
 export function InvoicesDataView({
@@ -18,10 +19,11 @@ export function InvoicesDataView({
   showEstado = false,
   resetKey,
   listQuery = "",
+  onDeleted,
 }: InvoicesDataViewProps) {
   const columns = useMemo(
-    () => getInvoiceColumns(showEstado, listQuery),
-    [showEstado, listQuery],
+    () => getInvoiceColumns(showEstado, listQuery, onDeleted),
+    [showEstado, listQuery, onDeleted],
   );
 
   return (
@@ -30,7 +32,12 @@ export function InvoicesDataView({
       data={facturas}
       resetKey={resetKey}
       mobileRenderer={(rows) => (
-        <InvoiceMobileList facturas={rows} showEstado={showEstado} listQuery={listQuery} />
+        <InvoiceMobileList
+          facturas={rows}
+          showEstado={showEstado}
+          listQuery={listQuery}
+          onDeleted={onDeleted}
+        />
       )}
     />
   );

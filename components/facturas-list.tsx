@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Calendar,
@@ -22,12 +23,15 @@ import { InvoicesDataView } from "@/components/invoices-data-view";
 import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { UploadDropzone } from "@/components/upload-dropzone";
+import { isEmisionInRange } from "@/lib/date-emision";
 import {
   buildFacturasListQuery,
   type FacturasListFilterState,
   type FacturasListMode,
 } from "@/lib/facturas-list-state";
+import { buildReportQuery } from "@/lib/reports/filters";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import type { Factura } from "@/lib/types/database";
 
 interface FacturasListProps {
@@ -51,6 +55,19 @@ export function FacturasList({
   const [emisionDesde, setEmisionDesde] = useState(initialFilters.emisionDesde);
   const [emisionHasta, setEmisionHasta] = useState(initialFilters.emisionHasta);
   const [listQuery, setListQuery] = useState(initialListQuery);
+  const filterStateRef = useRef({
+    mode: initialFilters.mode,
+    desde: initialFilters.emisionDesde,
+    hasta: initialFilters.emisionHasta,
+  });
+
+  useEffect(() => {
+    filterStateRef.current = {
+      mode: filterMode,
+      desde: emisionDesde,
+      hasta: emisionHasta,
+    };
+  }, [filterMode, emisionDesde, emisionHasta]);
 
   const replaceListUrl = useCallback(
     (mode: FacturasListMode, desde: string, hasta: string) => {
@@ -68,8 +85,16 @@ export function FacturasList({
   );
 
   const loadFacturas = useCallback(
-    async (mode: FacturasListMode, desde: string, hasta: string) => {
-      setIsLoading(true);
+    async (
+      mode: FacturasListMode,
+      desde: string,
+      hasta: string,
+      options?: { background?: boolean },
+    ) => {
+      if (!options?.background) {
+        setIsLoading(true);
+      }
+
       try {
         const query =
           mode === "emision"
@@ -78,7 +103,7 @@ export function FacturasList({
 
         replaceListUrl(mode, desde, hasta);
 
-        const response = await fetch(`/api/facturas?${query}`);
+        const response = await fetch(`/api/facturas?${query}`, { cache: "no-store" });
         const data = await response.json();
 
         if (!response.ok) {
@@ -94,10 +119,35 @@ export function FacturasList({
           error instanceof Error ? error.message : "No se pudieron cargar las facturas",
         );
       } finally {
-        setIsLoading(false);
+        if (!options?.background) {
+          setIsLoading(false);
+        }
       }
     },
     [replaceListUrl],
+  );
+
+  useEffect(() => {
+    if (pathname !== "/facturas") return;
+    const { mode, desde, hasta } = filterStateRef.current;
+    void loadFacturas(mode, desde, hasta, { background: true });
+  }, [pathname, loadFacturas]);
+
+  const handleUploadComplete = useCallback(
+    (factura: { id: string; fecha_emision?: string | null }) => {
+      void loadFacturas("uploadedToday", emisionDesde, emisionHasta);
+
+      if (
+        filterMode === "emision" &&
+        factura.fecha_emision &&
+        !isEmisionInRange(factura.fecha_emision, emisionDesde, emisionHasta)
+      ) {
+        toast.info(
+          "La factura se guardó correctamente. Su fecha de emisión está fuera del rango filtrado; usa «Subidas hoy» para verla.",
+        );
+      }
+    },
+    [emisionDesde, emisionHasta, filterMode, loadFacturas],
   );
 
   async function handleExport() {
@@ -138,6 +188,10 @@ export function FacturasList({
 
   const listQuerySuffix = listQuery ? `?${listQuery}` : "";
 
+  const handleFacturaDeleted = useCallback((id: string) => {
+    setFacturas((current) => current.filter((factura) => factura.id !== id));
+  }, []);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -154,6 +208,18 @@ export function FacturasList({
           <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
           Actualizar
         </Button>
+        <Link
+          href={`/reportes?${buildReportQuery("detalle_lineas", {
+            uploadedToday: filterMode === "uploadedToday",
+            emisionDesde,
+            emisionHasta,
+            proveedor: null,
+          })}`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-9 rounded-xl")}
+        >
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Reportes
+        </Link>
         <Button
           size="sm"
           className="h-9 rounded-xl bg-emerald-600 font-semibold text-white shadow-sm hover:bg-emerald-700"
@@ -169,10 +235,7 @@ export function FacturasList({
         </Button>
       </PageHeader>
 
-      <UploadDropzone
-        listQuery={listQuerySuffix}
-        onUploadComplete={() => void loadFacturas(filterMode, emisionDesde, emisionHasta)}
-      />
+      <UploadDropzone onUploadComplete={handleUploadComplete} />
 
       <GlassCard padding="none" className="overflow-hidden">
         <CardHeader className="border-b border-border/60 bg-muted/30 px-5 py-4 sm:px-6">
@@ -254,7 +317,11 @@ export function FacturasList({
             <EmptyState
               icon={FileText}
               title="Sin resultados"
-              description="No hay facturas para el filtro seleccionado. Prueba otro rango de fechas."
+              description={
+                filterMode === "emision"
+                  ? "No hay facturas con emisión en ese rango. Prueba «Subidas hoy» o amplía las fechas."
+                  : "No hay facturas subidas hoy. Sube un PDF o filtra por fecha de emisión."
+              }
             />
           ) : (
             <InvoicesDataView
@@ -262,6 +329,7 @@ export function FacturasList({
               showEstado
               listQuery={listQuerySuffix}
               resetKey={`${filterMode}-${emisionDesde}-${emisionHasta}`}
+              onDeleted={handleFacturaDeleted}
             />
           )}
         </CardContent>

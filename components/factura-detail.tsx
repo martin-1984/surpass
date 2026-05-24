@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowLeft, Building2, Calendar, Hash, Receipt } from "lucide-react";
+import { DeleteFacturaButton } from "@/components/delete-factura-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
@@ -92,7 +93,7 @@ export function FacturaDetail({
       <div>
         <h2 className="font-heading text-sm font-bold tracking-tight text-foreground/90">Detalle de líneas</h2>
         <p className="text-xs text-muted-foreground/80">
-          {factura.factura_items.length} ítem(s) extraídos automáticamente del PDF
+          {factura.factura_items.length} línea{factura.factura_items.length !== 1 ? "s" : ""} de detalle
         </p>
       </div>
     </div>
@@ -117,21 +118,32 @@ export function FacturaDetail({
         Volver al historial
       </Link>
 
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <h1 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
-            {factura.numero_factura}
-          </h1>
-          <Badge className="bg-primary/8 text-primary border-primary/10 hover:bg-primary/12 font-bold px-3 py-1 rounded-full text-xs">
-            {providerLabel(factura.proveedor)}
-          </Badge>
-          <Badge variant="outline" className="border-border bg-background/50 text-foreground/80 px-3 py-1 rounded-full text-xs font-semibold">
-            {factura.estado === "parsed" ? "Procesada" : "Pendiente"}
-          </Badge>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              {factura.numero_factura}
+            </h1>
+            <Badge className="rounded-full border-primary/10 bg-primary/8 px-3 py-1 text-xs font-bold text-primary hover:bg-primary/12">
+              {providerLabel(factura.proveedor)}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="rounded-full border-border bg-background/50 px-3 py-1 text-xs font-semibold text-foreground/80"
+            >
+              {factura.estado === "parsed" ? "Procesada" : "Pendiente"}
+            </Badge>
+          </div>
+          <p className="truncate text-sm font-medium text-muted-foreground/80">
+            Archivo: {factura.archivo_nombre}
+          </p>
         </div>
-        <p className="truncate text-sm font-medium text-muted-foreground/80">
-          Archivo: {factura.archivo_nombre}
-        </p>
+        <DeleteFacturaButton
+          facturaId={factura.id}
+          label={factura.numero_factura}
+          returnHref={returnHref}
+          className="shrink-0 self-start"
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

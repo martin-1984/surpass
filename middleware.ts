@@ -6,7 +6,7 @@ import {
   updateSession,
 } from "@/lib/supabase/middleware";
 
-const protectedPaths = ["/dashboard", "/facturas"];
+const protectedPaths = ["/dashboard", "/facturas", "/reportes"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/facturas/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/facturas/:path*", "/reportes/:path*", "/login"],
 };
 
 export { AUTH_COOKIE };

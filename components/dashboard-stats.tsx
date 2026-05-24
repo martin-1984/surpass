@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, CalendarRange, FileText, PieChart, Receipt, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
@@ -28,27 +29,50 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ initialAnalytics }: DashboardStatsProps) {
+  const pathname = usePathname();
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [isLoading, setIsLoading] = useState(false);
+  const filtersRef = useRef(initialAnalytics.filters);
 
-  const loadAnalytics = useCallback(async (filters: DashboardFilterParams) => {
-    setIsLoading(true);
-    try {
-      const query = buildDashboardQuery(filters);
-      const response = await fetch(`/api/dashboard/stats?${query}`);
-      const data = await response.json();
+  useEffect(() => {
+    filtersRef.current = analytics.filters;
+  }, [analytics.filters]);
 
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo cargar el dashboard");
+  const loadAnalytics = useCallback(
+    async (filters: DashboardFilterParams, options?: { background?: boolean }) => {
+      if (!options?.background) {
+        setIsLoading(true);
       }
 
-      setAnalytics(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo cargar el dashboard");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      try {
+        const query = buildDashboardQuery(filters);
+        const response = await fetch(`/api/dashboard/stats?${query}`, {
+          cache: "no-store",
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo cargar el dashboard");
+        }
+
+        setAnalytics(data);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "No se pudo cargar el dashboard",
+        );
+      } finally {
+        if (!options?.background) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (pathname !== "/dashboard") return;
+    void loadAnalytics(filtersRef.current, { background: true });
+  }, [pathname, loadAnalytics]);
 
   function handleFilterChange(filters: DashboardFilterParams) {
     void loadAnalytics(filters);
@@ -62,7 +86,7 @@ export function DashboardStats({ initialAnalytics }: DashboardStatsProps) {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Resumen de facturas procesadas de Cerámica Lima y Saint-Gobain."
+        description="Resumen de facturas procesadas por periodo y proveedor."
       >
         <Badge
           variant="outline"

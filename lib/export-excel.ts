@@ -1,4 +1,6 @@
-import * as XLSX from "xlsx";
+import { reportToExcelBuffer } from "@/lib/reports/export-excel";
+import { buildReport } from "@/lib/reports/build-report";
+import type { ReportFilters } from "@/lib/reports/types";
 import { providerLabel } from "@/lib/format";
 import type { FacturaWithItems } from "@/lib/types/database";
 
@@ -42,10 +44,15 @@ export function buildExportRows(facturas: FacturaWithItems[]): ExportRow[] {
   return rows;
 }
 
-export function facturasToExcelBuffer(facturas: FacturaWithItems[]): Buffer {
-  const rows = buildExportRows(facturas);
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Detalle facturas");
-  return Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }));
+export function facturasToExcelBuffer(
+  facturas: FacturaWithItems[],
+  filters?: ReportFilters,
+): Buffer {
+  const report = buildReport({
+    type: "detalle_lineas",
+    filters: filters ?? {},
+    facturas,
+    facturasWithItems: facturas,
+  });
+  return reportToExcelBuffer(report);
 }

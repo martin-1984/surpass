@@ -73,7 +73,7 @@ export function parseDashboardQuery(searchParams: URLSearchParams): DashboardFil
   return { year, month, proveedor: proveedor === "all" ? null : proveedor };
 }
 
-function getEmisionParts(factura: Factura) {
+export function getEmisionParts(factura: Factura) {
   const date = parseEmisionDate(factura.fecha_emision);
   if (!date) return null;
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
@@ -101,7 +101,7 @@ export function filterFacturasForDashboard(
   );
 }
 
-function filterByYearAndProveedor(
+export function filterByYearAndProveedor(
   facturas: Factura[],
   year: number,
   proveedor: string | null,
@@ -113,6 +113,46 @@ function filterByYearAndProveedor(
   });
 }
 
+export function computePorMesAggregates(
+  facturas: Factura[],
+  year: number,
+  proveedor: string | null,
+): MesAggregate[] {
+  const yearFacturas = filterByYearAndProveedor(facturas, year, proveedor);
+  return MESES.map((label, index) => {
+    const mes = index + 1;
+    const mesFacturas = yearFacturas.filter((f) => getEmisionParts(f)?.month === mes);
+    return {
+      mes,
+      label,
+      cantidad: mesFacturas.length,
+      total: mesFacturas.reduce((sum, f) => sum + (f.total_pagar ?? 0), 0),
+    };
+  });
+}
+
+export function computeProveedorAggregates(facturas: Factura[]): ProveedorAggregate[] {
+  const providerTotals = new Map<string, { cantidad: number; total: number }>();
+  for (const factura of facturas) {
+    const current = providerTotals.get(factura.proveedor) ?? { cantidad: 0, total: 0 };
+    providerTotals.set(factura.proveedor, {
+      cantidad: current.cantidad + 1,
+      total: current.total + (factura.total_pagar ?? 0),
+    });
+  }
+
+  const periodMonto = facturas.reduce((sum, f) => sum + (f.total_pagar ?? 0), 0);
+  return [...providerTotals.entries()]
+    .map(([proveedor, data]) => ({
+      proveedor,
+      label: providerLabel(proveedor),
+      cantidad: data.cantidad,
+      total: data.total,
+      porcentaje: periodMonto > 0 ? (data.total / periodMonto) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+}
+
 function buildPeriodLabel(filters: DashboardFilterParams) {
   if (filters.month == null) {
     return `Año ${filters.year}`;
@@ -120,7 +160,7 @@ function buildPeriodLabel(filters: DashboardFilterParams) {
   return `${MESES[filters.month - 1]} ${filters.year}`;
 }
 
-function extractAvailableYears(facturas: Factura[]): number[] {
+export function extractAvailableYears(facturas: Factura[]): number[] {
   const years = new Set<number>();
   for (const factura of facturas) {
     const parts = getEmisionParts(factura);
@@ -131,7 +171,7 @@ function extractAvailableYears(facturas: Factura[]): number[] {
   return [...years].sort((a, b) => b - a);
 }
 
-function extractProveedores(facturas: Factura[]): string[] {
+export function extractProveedores(facturas: Factura[]): string[] {
   return [...new Set(facturas.map((f) => f.proveedor))].sort();
 }
 
@@ -143,39 +183,10 @@ export function computeDashboardAnalytics(
   const totalMonto = filtered.reduce((sum, f) => sum + (f.total_pagar ?? 0), 0);
   const totalFacturas = filtered.length;
 
-  const yearFacturas = filterByYearAndProveedor(allFacturas, filters.year, filters.proveedor);
-  const porMes: MesAggregate[] = MESES.map((label, index) => {
-    const mes = index + 1;
-    const mesFacturas = yearFacturas.filter((f) => getEmisionParts(f)?.month === mes);
-    return {
-      mes,
-      label: label.slice(0, 3),
-      cantidad: mesFacturas.length,
-      total: mesFacturas.reduce((sum, f) => sum + (f.total_pagar ?? 0), 0),
-    };
-  });
-
-  const periodFacturas = filtered;
-
-  const providerTotals = new Map<string, { cantidad: number; total: number }>();
-  for (const factura of periodFacturas) {
-    const current = providerTotals.get(factura.proveedor) ?? { cantidad: 0, total: 0 };
-    providerTotals.set(factura.proveedor, {
-      cantidad: current.cantidad + 1,
-      total: current.total + (factura.total_pagar ?? 0),
-    });
-  }
-
-  const periodMonto = periodFacturas.reduce((sum, f) => sum + (f.total_pagar ?? 0), 0);
-  const porProveedor: ProveedorAggregate[] = [...providerTotals.entries()]
-    .map(([proveedor, data]) => ({
-      proveedor,
-      label: providerLabel(proveedor),
-      cantidad: data.cantidad,
-      total: data.total,
-      porcentaje: periodMonto > 0 ? (data.total / periodMonto) * 100 : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
+  const porMes = computePorMesAggregates(allFacturas, filters.year, filters.proveedor).map(
+    (m) => ({ ...m, label: m.label.slice(0, 3) }),
+  );
+  const porProveedor = computeProveedorAggregates(filtered);
 
   return {
     filters,

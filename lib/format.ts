@@ -18,12 +18,12 @@ export function formatDate(value: string | null | undefined) {
 }
 
 export function providerLabel(provider: string) {
-  switch (provider) {
-    case "celima":
-      return "Cerámica Lima";
-    case "saint-gobain":
-      return "Saint-Gobain";
-    default:
-      return provider;
-  }
+  if (!provider?.trim()) return "—";
+
+  return provider
+    .trim()
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }

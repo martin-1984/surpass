@@ -48,9 +48,31 @@ describe("PDF parsers", () => {
 
     expect(parsed.provider).toBe("saint-gobain");
     expect(parsed.numeroFactura).toBe("FV01-142050");
+    expect(parsed.fechaEmision).toBe("13/05/2026");
+    expect(parsed.fechaVencimiento).toBe("12/07/2026");
     expect(parsed.items.length).toBeGreaterThanOrEqual(10);
     expect(parsed.totalPagar).toBe(30901.56);
   });
+
+  it.each([
+    ["20101026001-01-F004-00620143.pdf", "celima"],
+    ["20101026001-01-F004-00620144.pdf", "celima", "15/05/2026"],
+    ["20161636780-01-F004-00368956.pdf", "celima"],
+    ["20161636780-01-F004-00368959.pdf", "celima", "13/05/2026"],
+  ] as const)(
+    "extrae fecha de emisión en %s",
+    async (fileName, provider, expectedEmision) => {
+      const buffer = readPdf(fileName);
+      const text = await extractPdfText(buffer);
+      const parsed = parseInvoiceText(text);
+
+      expect(parsed.provider).toBe(provider);
+      expect(parsed.fechaEmision).toBeTruthy();
+      if (expectedEmision) {
+        expect(parsed.fechaEmision).toBe(expectedEmision);
+      }
+    },
+  );
 
   it("rechaza PDF sin formato reconocido", () => {
     const fakeText = "A".repeat(60);
